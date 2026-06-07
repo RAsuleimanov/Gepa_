@@ -6,9 +6,11 @@
 
 ```
 pipeline/
-├── run.py               # Точка входа
-├── adapter.py           # UnblockCardAdapter — GEPAAdapter Protocol
-├── kib_adapter.py       # KIBAdapter — адаптер для КИБ
+├── run.py               # Точка входа — gepa.optimize() + тестовая оценка
+├── eval_best.py         # Оценка лучших промптов из артефактов на test-датасетах
+├── adapter.py           # UnblockCardAdapter — разблокировка карт (single-component)
+├── kib_adapter.py       # KIBAdapter — КИБ, классификация (single-component)
+├── vis_adapter.py       # VisAdapter — ВиС, маршрутизация документов (multi-component)
 ├── llm.py               # LLM-адаптеры (OpenAI SDK, langchain-gigachat), конфиг провайдеров
 ├── config.py            # Pydantic-модели + загрузка YAML-конфигов
 ├── schema.py            # Валидация датасетов
@@ -16,14 +18,14 @@ pipeline/
 ├── collect_results.py   # Сбор run_summary.json в experiments.xlsx
 ├── configs/
 │   ├── unblock/         # Конфиги для разблокировки карт
+│   ├── kib/             # Конфиги для КИБ
 │   └── vis/             # Конфиги для ВиС
 ├── prompts/
-│   └── seed.md          # Начальный системный промпт (unblock)
-├── ВиС/
-│   ├── Промпт/          # Seed-промпт для ВиС
-│   ├── Датасеты/        # Исходные датасеты (не в git — PII)
-│   ├── datasets/        # train/val сплиты (не в git — PII)
-│   └── prepare_datasets.py  # Скрипт подготовки датасетов
+│   ├── seed.md          # Начальный системный промпт (unblock)
+│   ├── vis_seed.md      # Seed-промпт для ВиС
+│   └── reflection_prompt_template.yaml  # Шаблон рефлексии-мутатора
+├── ВиС/                 # Скрипты/датасеты ВиС (датасеты не в git — PII)
+│   └── prepare_datasets.py  # Подготовка train/val сплитов для ВиС
 └── requirements.txt
 ```
 
@@ -49,9 +51,15 @@ pipeline/
 # Unblock
 python run.py --config configs/unblock/task-max_reflect-max.yaml
 
+# КИБ
+python run.py --config configs/kib/kib_max_max.yaml
+
 # ВиС (сначала подготовить датасеты)
 python ВиС/prepare_datasets.py
 python run.py --config configs/vis/vis_max_max.yaml
+
+# Переоценить лучшие промпты из артефактов на test-датасетах
+python eval_best.py --configs-dir configs/unblock
 
 # Собрать результаты
 python collect_results.py --artifacts-dir artifacts/gepa_pipeline
@@ -142,4 +150,4 @@ run_dir: artifacts/gepa_pipeline
 | `token_usage.json` | Счётчики токенов (сохраняются между перезапусками) |
 | `run_summary.json` | Полная сводка прогона |
 
-Метрика — доля успешных regex-проверок по всем шагам сценариев (0.0–1.0).
+Метрика — accuracy = доля успешных шагов / всего шагов (0.0–1.0): regex-проверки для unblock, корректность классификации для КИБ, точность маршрутизации для ВиС.
