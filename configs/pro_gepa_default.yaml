@@ -1,0 +1,62 @@
+run_name: pro_gepa_default
+
+_base_provider: &base_provider
+  name: gigachat-pro
+  type: gigachat
+  model: GigaChat-2-Pro-preview
+  base_url: https://gigachat-ift.sberdevices.delta.sbrf.ru/v1
+  timeout_seconds: 120
+  verify_ssl: false
+  cert_file: .certs/cert_agents.txt
+  key_file: .certs/key_agents.txt
+  extra_params:
+    profanity_check: false
+    repetition_penalty: 1
+
+task_provider:
+  <<: *base_provider
+
+# reflection_provider not set → reuses task_provider
+
+mutator:
+  type: gepa_default
+  temperature: 0.7
+  reflection_prompt_template: |
+    Ассистенту были даны следующие инструкции для выполнения задачи:
+    ```
+    <curr_param>
+    ```
+
+    Ниже приведены примеры входных данных задачи, ответы ассистента на каждый из них, а также обратная связь о том, как ответы можно улучшить:
+    ```
+    <side_info>
+    ```
+
+    Твоя задача — написать новые инструкции для ассистента.
+
+    Внимательно прочитай входные данные, определи их формат и сформулируй подробное описание задачи, которую нужно решить.
+
+    Изучи все ответы ассистента и соответствующую обратную связь. Выяви всю специфическую и доменную фактическую информацию о задаче и включи её в инструкцию — в будущем ассистент может не иметь к ней доступа. Если ассистент использовал обобщаемую стратегию решения задачи, также включи её в инструкцию.
+
+    Напиши новые инструкции внутри блока ```.
+
+optimization:
+  max_calls: 500
+  patience: 5
+  minibatch_size: 15      # ~10% of 150 train scenarios per iteration
+  candidate_selection_strategy: pareto
+  use_merge: true
+  eval_temperature: 0.0
+  seed: 0
+
+train:
+  - datasets/augmented_train.json
+
+val:
+  - datasets/augmented_val.json
+
+test: datasets/test_orig.json
+
+seed_prompt: prompts/seed.md
+heatmap_template: error_heatmap.xlsx
+run_dir: artifacts/gepa_pipeline

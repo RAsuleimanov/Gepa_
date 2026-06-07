@@ -1,0 +1,60 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.DS_Store
+artifacts/
+.certs/
+*.pem
+/datasets/
+ВиС/datasets/
+ВиС/Датасеты/*.json
+КИБ/datasets/
+
+# Результаты прогонов (легко пересоздать)
+ВиС/Прогоны/
+КИБ/Прогоны/
+ВиС/error_heatmap.xlsx
+
+# Старые версии датасетов (актуальные: v4 для КИБ, v10+json для ВиС)
+КИБ/Датасеты/LLM_Фильтр_Тестовый_Датасет_ИФТ_v1.json
+КИБ/Датасеты/LLM_Фильтр_Тестовый_Датасет_ИФТ_v2.json
+КИБ/Датасеты/LLM_Фильтр_Тестовый_Датасет_ИФТ_v3.json
+КИБ/Датасеты/LLM_Фильтр_Тестовый_Датасет_ИФТ_CSAT_v1.json
+КИБ/Датасеты/LLM_Фильтр_Тестовый_Датасет_ИФТ_CSAT_v2.json
+ВиС/Датасеты/*.xlsx
+
+# Тетрадки
+*.ipynb
+
+# Конфиги с внешними моделями (OpenRouter и т.д.)
+configs/kib/kib_pro_deepseek.yaml
+configs/kib/kib_pro_glm5.yaml
+configs/kib/kib_pro_kimi.yaml
+configs/kib/kib_pro_minimax.yaml
+configs/kib/kib_pro_opus.yaml
+configs/unblock/task-pro_reflect-deepseek.yaml
+configs/unblock/task-pro_reflect-glm5.yaml
+configs/unblock/task-pro_reflect-kimi.yaml
+configs/unblock/task-pro_reflect-minimax.yaml
+configs/unblock/task-pro_reflect-opus.yaml
+configs/vis/vis_*_opus*.yaml
+configs/vis/vis_deepseek_*.yaml
+configs/vis/vis_gptoss_*.yaml
+configs/vis/vis_minimax_*.yaml
+configs/vis/vis_pro_deepseek.yaml
+configs/vis/vis_pro_glm5.yaml
+configs/vis/vis_pro_kimi.yaml
+configs/vis/vis_pro_minimax.yaml
+configs/vis/vis_pro_opus.yaml
+
+# Одноразовые скрипты и старые промпты
+test_openai_models.py
+run_kib_prompt_eval.py
+create_results_table.py
+base_prompt.txt
+best_prompt.txt
+best_prompt2.txt
+prompts/op_prompt_last_2.txt
+prompts/opus_v12_v2.txt
+prompts/vis_best_gptoss.md

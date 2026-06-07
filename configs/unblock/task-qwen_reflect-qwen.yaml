@@ -1,0 +1,81 @@
+# Row 11: task=qwen32b, reflection=qwen32b
+run_name: task-qwen32b_reflect-qwen32b
+
+_openai: &openai
+  type: openai_compatible
+  timeout_seconds: 120
+  verify_ssl: true
+
+task_provider:
+  <<: *openai
+  name: qwen32b
+  model: qwen32b
+  base_url: http://10.27.60.9:2717/v1
+  api_key_env: INTERNAL_LLM_API_KEY
+  extra_params:
+    chat_template_kwargs:
+      enable_thinking: false
+    top_k: 20
+    presence_penalty: 1.5
+    max_tokens: 4096
+
+reflection_provider:
+  <<: *openai
+  name: qwen32b
+  model: qwen32b
+  base_url: http://10.27.60.9:2717/v1
+  api_key_env: INTERNAL_LLM_API_KEY
+  extra_params:
+    chat_template_kwargs:
+      enable_thinking: true
+    top_k: 20
+    max_tokens: 32768
+
+mutator:
+  type: gepa_default
+  temperature: 0.7
+  reflection_prompt_template: |
+    Ассистенту были даны следующие инструкции для выполнения задачи:
+    ```
+    <curr_param>
+    ```
+
+    Ниже приведены примеры входных данных задачи, ответы ассистента на каждый из них, а также обратная связь о том, как ответы можно улучшить:
+    ```
+    <side_info>
+    ```
+
+    Your task is to write improved instructions for the assistant.
+
+    Carefully read the input data, identify its format, and formulate a detailed description of the task to be solved.
+
+    Review all assistant responses and corresponding feedback. Critically analyze the current instructions:
+    - If an existing rule caused errors, rewrite or remove it.
+    - Merge rules that overlap or contradict each other.
+    - Add a new rule ONLY if the error pattern is not covered by any existing rule.
+    - Each rule must be specific and actionable — no vague guidance.
+
+    Identify all domain-specific factual information about the task and preserve it in the instructions — the assistant may not have access to it in the future.
+
+    Write the improved instructions inside a ``` block.
+
+optimization:
+  max_calls: 3000
+  patience: 30
+  minibatch_size: 15
+  candidate_selection_strategy: pareto
+  use_merge: false
+  eval_temperature: 0.15
+  seed: 0
+
+train:
+  - datasets/train.json
+
+val:
+  - datasets/val.json
+
+test: datasets/test_orig.json
+
+seed_prompt: prompts/seed.md
+heatmap_template: error_heatmap.xlsx
+run_dir: artifacts/gepa_pipeline

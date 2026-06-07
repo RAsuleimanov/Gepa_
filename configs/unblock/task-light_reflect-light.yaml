@@ -1,0 +1,69 @@
+# Row 6: task=gigachat, reflection=gigachat
+run_name: task-GigaChat-2_reflect-GigaChat-2
+
+_gigachat: &gigachat
+  type: gigachat
+  base_url: https://gigachat-ift.sberdevices.delta.sbrf.ru/v1
+  timeout_seconds: 120
+  verify_ssl: false
+  cert_file: .certs/cert_agents.txt
+  key_file: .certs/key_agents.txt
+  extra_params:
+    profanity_check: false
+    repetition_penalty: 1
+
+task_provider:
+  <<: *gigachat
+  name: gigachat
+  model: GigaChat-2
+
+# reflection_provider not set → reuses task_provider
+
+mutator:
+  type: gepa_default
+  temperature: 0.7
+  reflection_prompt_template: |
+    Ассистенту были даны следующие инструкции для выполнения задачи:
+    ```
+    <curr_param>
+    ```
+
+    Ниже приведены примеры входных данных задачи, ответы ассистента на каждый из них, а также обратная связь о том, как ответы можно улучшить:
+    ```
+    <side_info>
+    ```
+
+    Твоя задача — написать улучшенные инструкции для ассистента.
+
+    Внимательно прочитай входные данные, определи их формат и сформулируй подробное описание задачи, которую нужно решить.
+
+    Изучи все ответы ассистента и соответствующую обратную связь. Проанализируй текущие инструкции критически:
+    - Если существующее правило привело к ошибкам — перепиши или убери его.
+    - Объедини дублирующиеся или противоречивые указания.
+    - Добавляй новое правило только если паттерн ошибки не покрыт существующими правилами.
+    - Каждое правило должно быть конкретным и применимым — без расплывчатых формулировок.
+
+    Выяви всю специфическую и доменную фактическую информацию о задаче и сохрани её в инструкции — в будущем ассистент может не иметь к ней доступа.
+
+    Напиши улучшенные инструкции внутри блока ```.
+
+optimization:
+  max_calls: 3000
+  patience: 30
+  minibatch_size: 15
+  candidate_selection_strategy: pareto
+  use_merge: false
+  eval_temperature: 0.0
+  seed: 0
+
+train:
+  - datasets/train.json
+
+val:
+  - datasets/val.json
+
+test: datasets/test_orig.json
+
+seed_prompt: prompts/seed.md
+heatmap_template: error_heatmap.xlsx
+run_dir: artifacts/gepa_pipeline

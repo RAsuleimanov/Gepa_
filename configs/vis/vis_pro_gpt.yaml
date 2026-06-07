@@ -1,0 +1,97 @@
+run_name: vis_v12_pro_gpt
+adapter_type: vis
+
+_gigachat: &gigachat
+  type: gigachat
+  base_url: https://gigachat-ift.sberdevices.delta.sbrf.ru/v1
+  timeout_seconds: 120
+  verify_ssl: false
+  cert_file: .certs/cert_agents.txt
+  key_file: .certs/key_agents.txt
+  extra_params:
+    profanity_check: false
+    repetition_penalty: 1
+
+_openai: &openai
+  type: openai_compatible
+  timeout_seconds: 120
+  verify_ssl: true
+
+task_provider:
+  <<: *gigachat
+  name: gigachat-pro
+  model: GigaChat-2-Pro
+
+reflection_provider:
+  <<: *openai
+  name: gpt-oss
+  model: gpt-oss-120
+  base_url: http://10.27.60.9:2719/v1
+  api_key_env: INTERNAL_LLM_API_KEY
+  extra_params:
+    reasoning_effort: high
+    top_k: 20
+    top_p: 0.95
+    min_p: 0.05
+    repetition_penalty: 1.05
+    max_tokens: 32768
+
+mutator:
+  type: gepa_default
+  temperature: 0.7
+  reflection_prompt_template: |
+    The assistant was given the following instructions to complete the task:
+    ```
+    <curr_param>
+    ```
+
+    Below are examples of task inputs, the assistant's responses to each, and feedback on how the responses can be improved:
+    ```
+    <side_info>
+    ```
+
+    Your task is to write improved instructions for the assistant.
+
+    Carefully read the input data, identify its format, and formulate a detailed description of the task to be solved.
+
+    Review all assistant responses and corresponding feedback. Critically analyze the current instructions:
+    - If an existing rule caused errors, rewrite or remove it.
+    - Merge rules that overlap or contradict each other.
+    - Add a new rule ONLY if the error pattern is not covered by any existing rule.
+    - Each rule must be specific and actionable — no vague guidance.
+    - Do not remove or modify rules that are not mentioned in the feedback.
+    - Only change rules that directly caused errors shown in the examples.
+
+    COMPACTNESS (apply on every rewrite):
+    - Never DELETE a decision rule or fact — only MERGE duplicates. If rule A and rule B express the same logic, combine into one. The merged rule must cover all cases that A and B covered separately.
+    - If a mapping (e.g. "X = document Y") appears both in the rules section and in the document catalog, keep it ONLY in the catalog entry. Do not duplicate across sections.
+    - Remove examples that merely restate what the rule already says, but keep examples that illustrate edge cases or disambiguation.
+    - Prefer tables or structured lists over verbose prose for document mappings.
+
+    Identify all domain-specific factual information about the task and preserve it in the instructions — the assistant may not have access to it in the future.
+
+    Write the improved instructions inside a ``` block.
+
+optimization:
+  max_calls: 3000
+  patience: 30
+  minibatch_size: 7
+  candidate_selection_strategy: pareto
+  use_merge: true
+  eval_temperature: 0.0
+  seed: 0
+
+seed_prompts:
+  routing_logic: ВиС/Промпт/routing_logic.txt
+  doc_catalog: ВиС/Промпт/doc_catalog.txt
+
+module_selector: round_robin
+
+train: ВиС/datasets/train3.json
+val: ВиС/datasets/val3.json
+test:
+  - ВиС/Датасеты/dataset_ViS_v12.json
+  - ВиС/Датасеты/test_dataset_modification_v2.json
+
+heatmap_template: ВиС/error_heatmap.xlsx
+run_dir: artifacts/gepa_pipeline

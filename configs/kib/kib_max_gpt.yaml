@@ -1,0 +1,90 @@
+run_name: kib_max_gpt
+adapter_type: kib_filter
+
+_gigachat: &gigachat
+  type: gigachat
+  base_url: https://gigachat-ift.sberdevices.delta.sbrf.ru/v1
+  timeout_seconds: 120
+  verify_ssl: false
+  cert_file: .certs/cert_agents.txt
+  key_file: .certs/key_agents.txt
+  extra_params:
+    profanity_check: false
+    repetition_penalty: 1
+
+_openai: &openai
+  type: openai_compatible
+  timeout_seconds: 120
+  verify_ssl: true
+
+task_provider:
+  <<: *gigachat
+  name: gigachat-max
+  model: GigaChat-2-Max
+
+reflection_provider:
+  <<: *openai
+  name: gpt-oss
+  model: gpt-oss-120
+  base_url: http://10.27.60.9:2719/v1
+  api_key_env: INTERNAL_LLM_API_KEY
+  extra_params:
+    reasoning_effort: high
+    top_k: 20
+    top_p: 0.95
+    min_p: 0.05
+    repetition_penalty: 1.05
+    max_tokens: 32768
+
+mutator:
+  type: gepa_default
+  temperature: 0.7
+  reflection_prompt_template: |
+    Ассистенту были даны следующие инструкции для выполнения задачи:
+    ```
+    <curr_param>
+    ```
+
+    Ниже приведены примеры входных данных задачи, ответы ассистента на каждый из них, а также обратная связь о том, как ответы можно улучшить:
+    ```
+    <side_info>
+    ```
+
+    Your task is to write improved instructions for the assistant.
+
+    Carefully read the input data, identify its format, and formulate a detailed description of the task to be solved.
+
+    Review all assistant responses and corresponding feedback. Critically analyze the current instructions:
+    - If an existing rule caused errors, rewrite or remove it.
+    - Merge rules that overlap or contradict each other.
+    - Add a new rule ONLY if the error pattern is not covered by any existing rule.
+    - Each rule must be specific and actionable — no vague guidance.
+
+    COMPACTNESS (apply on every rewrite):
+    - Never DELETE a classification rule or fact — only MERGE duplicates. If rule A and rule B express the same logic, combine into one.
+    - If a category marker (e.g. "115-ФЗ → off_topic") is described in multiple places, keep it in ONE section only. Do not duplicate across categories.
+    - Remove examples that merely restate what the rule already says, but keep examples that illustrate edge cases between categories.
+    - Prefer structured lists over verbose prose.
+
+    Identify all domain-specific factual information about the task and preserve it in the instructions — the assistant may not have access to it in the future.
+
+    Write the improved instructions inside a ``` block.
+
+optimization:
+  max_calls: 3000
+  patience: 30
+  minibatch_size: 20
+  candidate_selection_strategy: pareto
+  use_merge: false
+  eval_temperature: 0.0
+  seed: 0
+
+seed_prompt: КИБ/Промпт/seed.txt
+
+train: КИБ/datasets/train.json
+val: КИБ/datasets/val.json
+test:
+  - КИБ/datasets/test_v4.json
+  - КИБ/datasets/test_csat_v2.json
+
+run_dir: artifacts/gepa_pipeline
